@@ -154,11 +154,11 @@ class MainActivity : AppCompatActivity() {
     // if you press Back button this code will work
     override fun onBackPressed() {
         // if your webview can go back it will go back
-        if (webView.canGoBack())
+        if (webView.canGoBack()) {
             webView.goBack()
-        // if your webview cannot go back
-        // it will exit the application
-        else
+            // if your webview cannot go back
+            // it will exit the application
+        }else {
             super.onBackPressedDispatcher
             val builder = AlertDialog.Builder(this)
 
@@ -178,6 +178,7 @@ class MainActivity : AppCompatActivity() {
             // Create and show the dialog
             val dialog = builder.create()
             dialog.show()
+        }
     }
 
 }
