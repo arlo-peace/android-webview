@@ -2,20 +2,26 @@ package com.frame.cc
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.util.TypedValue
+import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.webkit.WebChromeClient
+import android.webkit.WebChromeClient.CustomViewCallback
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.appcompat.app.AlertDialog
@@ -28,8 +34,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
-    private var weburl = "https://app.51cao7.com/"
+    private var weburl = "https://androids16.mianfeikanpian.com/index/home.html"
     private var errorPage = "file:///android_asset/error.html";
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +46,6 @@ class MainActivity : AppCompatActivity() {
         setStatusBarColor(R.color.black)
         swipeRefreshLayout = findViewById(R.id.webSwipe)
         webView = findViewById(R.id.webView)
-
         // Show dialog if no internet
 
         // Handle the case where there's no internet connection
@@ -69,11 +75,63 @@ class MainActivity : AppCompatActivity() {
         // onPageFinished and override Url loading.
         webView.webViewClient = WebViewClient()
         // this will enable the javascript settings, it can also allow xss vulnerabilities
-        webView.settings.javaScriptEnabled = true
+        webView.settings.javaScriptEnabled = true;
+        webView.settings.useWideViewPort = true;
+        webView.settings.loadWithOverviewMode = true;
+        webView.settings.domStorageEnabled = true;
         // if you want to enable zoom feature
         webView.settings.setSupportZoom(true)
+        webView.webChromeClient = WebChromeClient()
         webView.webViewClient = MyWebViewClient()
 
+        webView.webChromeClient = object : WebChromeClient() {
+
+            private var customView: View? = null
+            private var customViewCallback: CustomViewCallback? = null
+            private var originalOrientation = 0
+            private var originalSystemVisibility = 0
+
+//            override fun getDefaultVideoPoster(): Bitmap? {
+//                return if (customView == null) null else BitmapFactory.decodeResource(
+//                    applicationContext.resources,
+//                    R.drawable.default_video_poster
+//                )
+//            }
+
+            override fun onHideCustomView() {
+                (window.decorView as FrameLayout).removeView(customView)
+                customView = null
+
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+
+                window.decorView.systemUiVisibility = originalSystemVisibility
+                requestedOrientation = originalOrientation
+
+                customViewCallback?.onCustomViewHidden()
+                customViewCallback = null
+            }
+
+            override fun onShowCustomView(view: View, callback: CustomViewCallback) {
+                if (customView != null) {
+                    onHideCustomView()
+                    return
+                }
+
+                customView = view
+                originalSystemVisibility = window.decorView.systemUiVisibility
+                originalOrientation = requestedOrientation
+                customViewCallback = callback
+
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+
+                (window.decorView as FrameLayout).addView(
+                    customView,
+                    FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                )
+                window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+            }
+
+        }
         if (isNetworkAvailable()) {
             // this will load the url of the website
             webView.loadUrl(weburl)
@@ -124,25 +182,26 @@ class MainActivity : AppCompatActivity() {
             request: WebResourceRequest?,
             error: WebResourceError
         ) {
+            Log.i("WWW", error.toString())
             // Check for ERR_NAME_NOT_RESOLVED
-            if (error.errorCode == ERROR_HOST_LOOKUP) {
-                webView.loadUrl(errorPage);
-            }
-            if(isNetworkAvailable()){
-                webView.loadUrl(weburl);
-                webView.canGoBack();
-            }
+//            if (error.errorCode == ERROR_HOST_LOOKUP) {
+//                webView.loadUrl(errorPage);
+//            }
+//            if(isNetworkAvailable()){
+//                webView.loadUrl(weburl);
+//                webView.canGoBack();
+//            }
         }
-        override fun onReceivedHttpError(
-            view: WebView?,
-            request: WebResourceRequest?,
-            errorResponse: WebResourceResponse?
-        ) {
-            super.onReceivedHttpError(view, request, errorResponse)
-            if (errorResponse != null) {
-                webView.loadUrl(errorPage);
-            }
-        }
+//        override fun onReceivedHttpError(
+//            view: WebView?,
+//            request: WebResourceRequest?,
+//            errorResponse: WebResourceResponse?
+//        ) {
+//            super.onReceivedHttpError(view, request, errorResponse)
+//            if (errorResponse != null) {
+//                webView.loadUrl(errorPage);
+//            }
+//        }
     }
 
     private fun isNetworkAvailable(): Boolean {
